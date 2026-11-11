@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ngũ Giác Tranh Hùng</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#EDF1F5;--ink:#1B2A4A;--mut:#5C6B85;--line:#C9D3E0;--q:#F28C28}
+*{box-sizing:border-box}
+body{margin:0;font:16px/1.5 'Be Vietnam Pro',system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+header{max-width:1100px;margin:0 auto;padding:18px 16px 0}
+h1{margin:0;font-size:28px;font-weight:800;letter-spacing:-.01em}
+.wrap{max-width:1100px;margin:0 auto;padding:12px 16px 24px;display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:20px}
+@media(max-width:860px){.wrap{grid-template-columns:1fr}}
+.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px}
+svg{width:100%;height:auto;display:block}
+.go{cursor:pointer}
+.go ring{animation:p 1.2s ease-in-out infinite}
+@keyframes p{50%{opacity:.35}}
+@media(prefers-reduced-motion:reduce){.go ring{animation:none}}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:14px;color:var(--mut);margin-top:8px}
+.legend i{display:inline-block;width:14px;height:14px;border-radius:50%;border:2px solid var(--ink);vertical-align:-2px;margin-right:6px}
+.clock{font-size:34px;font-weight:800;font-variant-numeric:tabular-nums}
+.bar{height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin:6px 0 10px}
+.bar b{display:block;height:100%;background:var(--ink)}
+.sc{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:8px}
+.sc.on{background:#E3EAF3;font-weight:600}
+.sc .dot{width:16px;height:16px;border-radius:50%}
+.sc .n{flex:1}
+.sc .v{font-weight:800;font-variant-numeric:tabular-nums}
+.sc small{color:var(--mut);font-weight:400}
+button{font:inherit;font-weight:600;border:0;border-radius:8px;background:var(--ink);color:#fff;padding:9px 16px;cursor:pointer}
+button:hover{opacity:.9}
+button:focus-visible,.go:focus-visible{outline:3px solid var(--q);outline-offset:2px}
+button.alt{background:#fff;color:var(--ink);border:2px solid var(--ink)}
+.log{font-size:14px;color:var(--mut);margin:0;padding-left:18px}
+#m{position:fixed;inset:0;background:rgba(27,42,74,.6);display:flex;align-items:center;justify-content:center;padding:16px;z-index:9}
+#m[hidden]{display:none}
+.box{background:#fff;border-radius:14px;padding:22px;max-width:560px;width:100%;max-height:90vh;overflow:auto}
+.box h3{margin:0 0 8px;font-size:22px}
+.tag{margin:0 0 6px;color:var(--mut);font-size:14px}
+.q{font-size:18px;margin:0 0 14px}
+.btns{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.btns button{text-align:left}
+.mut{color:var(--mut)}
+.rules li{margin-bottom:4px}
+</style>
+</head>
+<body>
+<header><h1>Ngũ Giác Tranh Hùng</h1></header>
+<div class="wrap">
+  <div>
+    <div class="card"><svg id="bd" viewBox="0 0 600 600" role="img" aria-label="Bàn cờ ngũ giác"></svg>
+      <div class="legend"><span><i style="background:#F28C28"></i>Ô câu hỏi (?)</span><span><i style="background:#fff"></i>Ô sự kiện (✦)</span><span>Ô đã chiếm mang màu đội</span></div>
+    </div>
+  </div>
+  <div>
+    <div class="card"><div class="mut">Thời gian còn lại</div><div class="clock" id="clk">25:00</div>
+      <div id="turn"></div><div class="bar"><b id="tb"></b></div><div id="act"></div></div>
+    <div class="card" id="sb"></div>
+    <div class="card"><div class="mut" style="margin-bottom:6px">Âm thanh</div>
+      <div style="display:flex;gap:10px;align-items:center"><button class="alt" id="mb" onclick="Mu.toggle()">Nhạc: bật</button>
+      <input type="range" min="0" max="100" value="50" aria-label="Âm lượng" style="flex:1" oninput="Mu.setVol(this.value/100)"></div>
+      <label class="mut" style="font-size:14px;display:block;margin-top:8px">Đổi sang nhạc khác (mp3, wav…): <input type="file" accept="audio/*" onchange="Mu.file(this.files[0])"></label></div>
+    <div class="card"><div class="mut" style="margin-bottom:4px">Nhật ký</div><ol class="log" id="lg" reversed></ol></div>
+  </div>
+</div>
+<div id="m" hidden></div>
+<script>
+const TN=["Đội 1","Đội 2","Đội 3","Đội 4","Đội 5"],TC=["#D7263D","#1B6CA8","#2E8B57","#7B4BA6","#D99A00"];
+const Q=[
+{t:"f",q:"Sự vận động, phát triển của xã hội bắt đầu từ sự phát triển của [______], trước hết là sự biến đổi, phát triển của công cụ sản xuất và sự phát triển về tri thức, kinh nghiệm, kỹ năng của người lao động.",a:"lực lượng sản xuất"},
+{t:"f",q:"Khi cơ sở hạ tầng biến đổi về chất dẫn đến sự biến đổi, phát triển căn bản (nhanh hay chậm, ít hoặc nhiều) của [______] xã hội.",a:"kiến trúc thượng tầng"},
+{t:"f",q:"[______] là quan hệ khách quan, cơ bản, chi phối và quyết định mọi quan hệ xã hội, đồng thời là tiêu chuẩn quan trọng nhất để phân biệt bản chất các chế độ xã hội khác nhau.",a:"Quan hệ sản xuất"},
+{t:"f",q:"Trong quy luật kinh tế cơ bản, lực lượng sản xuất đóng vai trò [______] đối với quan hệ sản xuất.",a:"quyết định"},
+{t:"f",q:"Yếu tố động nhất, cách mạng nhất trong lực lượng sản xuất chính là [______] sản xuất.",a:"công cụ"},
+{t:"f",q:"Tổng hợp toàn bộ những quan hệ sản xuất của một xã hội trong sự vận động thực tế của chúng hợp thành [______] của xã hội đó.",a:"cơ sở hạ tầng"},
+{t:"f",q:"Lực lượng sản xuất bao gồm tư liệu sản xuất và [______].",a:"người lao động"},
+{t:"f",q:"Tư liệu sản xuất bao gồm đối tượng lao động và [______] lao động.",a:"tư liệu"},
+{t:"f",q:"Sự thay thế các hình thái kinh tế - xã hội trong lịch sử loài người diễn ra theo một quá trình lịch sử - [______].",a:"tự nhiên"},
+{t:"f",q:"Giai cấp thống trị sử dụng bộ máy [______] như một công cụ quan trọng trong kiến trúc thượng tầng để bảo vệ lợi ích kinh tế của mình.",a:"nhà nước"},
+{t:"tf",q:"Lịch sử xã hội loài người là một tiến trình nối tiếp nhau từ thấp đến cao của các hình thái kinh tế - xã hội vì hình thái kinh tế - xã hội cũ mất đi, hình thái kinh tế - xã hội mới, tiến bộ ra đời.",a:true},
+{t:"tf",q:"Hình thái kinh tế - xã hội Phong kiến vẫn phân chia giai cấp mạnh mẽ như hình thái kinh tế - xã hội Chiếm hữu nô lệ và dụng cụ lao động vô cùng hiện đại.",a:false,e:"Nông dân có quyền sở hữu nhỏ về tư liệu sản xuất và được tự do hơn nô lệ; công cụ lao động thời phong kiến vẫn ở mức thủ công, thô sơ chứ chưa hiện đại."},
+{t:"tf",q:"Hình thái kinh tế - xã hội Tư bản chủ nghĩa có hệ thống kiến trúc thượng tầng đề cao quyền sở hữu tư nhân, tự do kinh doanh và cạnh tranh.",a:true},
+{t:"tf",q:"Hình thái kinh tế - xã hội Cộng sản nguyên thủy là hình thái kinh tế - xã hội kéo dài lâu nhất trong lịch sử loài người.",a:true},
+{t:"tf",q:"Trong hình thái kinh tế - xã hội Cộng sản chủ nghĩa, tư liệu sản xuất thuộc quyền sở hữu riêng của tư nhân.",a:false,e:"Tư liệu sản xuất chủ yếu thuộc sở hữu chung/sở hữu công cộng của xã hội."},
+{t:"tf",q:"Kiến trúc thượng tầng hoàn toàn thụ động và không có khả năng tác động trở lại cơ sở hạ tầng.",a:false,e:"Kiến trúc thượng tầng có tính độc lập tương đối và tác động trở lại cơ sở hạ tầng rất mạnh mẽ."},
+{t:"tf",q:"Quan hệ sản xuất có thể đi trước, vượt quá xa trình độ phát triển của lực lượng sản xuất mà vẫn thúc đẩy sản xuất phát triển tốt.",a:false,e:"Quan hệ sản xuất phải phù hợp với trình độ phát triển của lực lượng sản xuất; nếu vượt quá xa hoặc lạc hậu hơn đều sẽ kìm hãm lực lượng sản xuất."},
+{t:"tf",q:"Công cụ lao động là thước đo trình độ chinh phục tự nhiên của con người.",a:true},
+{t:"tf",q:"Khi cơ sở hạ tầng thay đổi thì sớm hay muộn kiến trúc thượng tầng cũng sẽ thay đổi theo.",a:true},
+{t:"tf",q:"Mọi quốc gia trên thế giới đều bắt buộc phải trải qua lần lượt tất cả 5 hình thái kinh tế - xã hội mà không được bỏ qua bất kỳ hình thái nào.",a:false,e:"Do đặc điểm lịch sử, điều kiện cụ thể, một số quốc gia có thể bỏ qua một hoặc vài hình thái kinh tế - xã hội để tiến thẳng lên hình thái cao hơn."},
+{t:"mc",q:"Trong hình thái kinh tế – xã hội tư bản chủ nghĩa, vì sao công nhân phải bán sức lao động cho nhà tư bản?",o:["Vì công nhân không được phép tham gia bất kỳ hoạt động kinh tế nào khác.","Vì công nhân không sở hữu đủ tư liệu sản xuất để tự tổ chức sản xuất độc lập và phải làm thuê để nhận tiền lương.","Vì nhà nước trực tiếp sở hữu toàn bộ nhà máy và bắt buộc mọi người phải làm thuê.","Vì công nhân không có khả năng sử dụng máy móc và công nghệ hiện đại."],a:1},
+{t:"mc",q:"Một địa chủ sở hữu nhiều ruộng đất, giao đất cho nông dân canh tác. Sau mỗi vụ mùa, nông dân phải nộp một phần sản phẩm cho địa chủ và thực hiện các nghĩa vụ lao dịch. Dựa vào quan hệ sản xuất, đây là đặc trưng của hình thái kinh tế – xã hội nào?",o:["Cộng sản nguyên thủy","Chiếm hữu nô lệ","Phong kiến","Tư bản chủ nghĩa"],a:2},
+{t:"mc",q:"Một cộng đồng cùng sử dụng công cụ lao động, cùng sản xuất và chia sẻ thành quả lao động, chưa có sự phân chia giai cấp đối kháng. Đây là đặc điểm của hình thái kinh tế – xã hội nào?",o:["Cộng sản nguyên thủy","Chiếm hữu nô lệ","Phong kiến","Tư bản chủ nghĩa"],a:0},
+{t:"mc",q:"Trong xã hội phong kiến, vì sao nông dân thường phải phụ thuộc vào địa chủ?",o:["Vì nông dân bị coi là tài sản thuộc sở hữu của địa chủ.","Vì nông dân không được phép tham gia hoạt động sản xuất nông nghiệp.","Vì địa chủ trực tiếp sở hữu toàn bộ sức lao động của nông dân như thời chiếm hữu nô lệ.","Vì ruộng đất tập trung trong tay địa chủ, khiến nông dân phải thuê hoặc nhận ruộng để canh tác và nộp tô."],a:3},
+{t:"mc",q:"Trong xã hội chiếm hữu nô lệ, chủ nô sở hữu tư liệu sản xuất và nô lệ, đồng thời sử dụng nhà nước để duy trì trật tự xã hội có lợi cho giai cấp thống trị. Nhận định nào giải thích đúng nhất mối quan hệ giữa kinh tế và chính trị trong tình huống này?",o:["Nhà nước quyết định hoàn toàn hình thức sở hữu tư liệu sản xuất mà không chịu ảnh hưởng của cơ sở kinh tế.","Nhà nước chỉ thực hiện các chức năng hành chính, không liên quan đến lợi ích giai cấp.","Quan hệ sở hữu tư liệu sản xuất không có ảnh hưởng đến tổ chức quyền lực chính trị.","Cơ sở kinh tế tác động đến kiến trúc thượng tầng; nhà nước góp phần duy trì những quan hệ kinh tế và lợi ích giai cấp tương ứng."],a:3},
+{t:"mc",q:"Một nhà máy tư bản chủ nghĩa tăng thời gian làm việc của công nhân vượt quá thời gian cần thiết để tạo ra giá trị tương đương với tiền lương của họ. Phần giá trị mới do công nhân tạo ra trong thời gian lao động vượt quá đó thuộc về nhà tư bản theo lý luận Mác. Tình huống này minh họa trực tiếp cho khái niệm nào?",o:["Địa tô phong kiến","Sở hữu chung về tư liệu sản xuất","Giá trị thặng dư","Phân phối theo nhu cầu"],a:2},
+{t:"mc",q:"Một xã hội giả định đã đạt trình độ phát triển cao của lực lượng sản xuất và thực hiện chế độ công hữu đối với tư liệu sản xuất chủ yếu. Tuy nhiên, thành quả lao động vẫn được phân phối chủ yếu căn cứ vào mức đóng góp lao động của mỗi người. Theo lý luận Mác – Lênin, mô tả này phù hợp nhất với giai đoạn nào?",o:["Chủ nghĩa xã hội – giai đoạn đầu của hình thái kinh tế – xã hội cộng sản chủ nghĩa","Chủ nghĩa cộng sản ở giai đoạn cao","Chủ nghĩa tư bản phát triển cao","Cộng sản nguyên thủy"],a:0},
+{t:"mc",q:"Một nhóm nghiên cứu cho rằng: “Chỉ cần thay đổi hệ thống pháp luật và bộ máy nhà nước là có thể lập tức thay đổi hoàn toàn bản chất kinh tế của xã hội, ngay cả khi quan hệ sở hữu và tổ chức sản xuất chưa thay đổi.” Theo quan điểm duy vật lịch sử, đánh giá nào phù hợp nhất?",o:["Đúng, vì kiến trúc thượng tầng quyết định hoàn toàn cơ sở hạ tầng.","Đúng, vì pháp luật là yếu tố duy nhất quyết định sự phát triển của xã hội.","Sai, vì kiến trúc thượng tầng không có bất kỳ tác động nào đến cơ sở hạ tầng.","Sai, vì cơ sở hạ tầng giữ vai trò quyết định đối với kiến trúc thượng tầng, mặc dù kiến trúc thượng tầng có tính độc lập tương đối và tác động trở lại cơ sở hạ tầng."],a:3},
+{t:"mc",q:"Theo quy luật quan hệ sản xuất phù hợp với trình độ phát triển của lực lượng sản xuất, khi quan hệ sản xuất trở thành lực cản đối với lực lượng sản xuất thì điều gì sẽ xảy ra?",o:["Lực lượng sản xuất tự động biến mất.","Xã hội không thay đổi.","Quan hệ sản xuất cần được cải biến hoặc thay thế bằng quan hệ sản xuất mới phù hợp.","Con người quay lại hình thái xã hội cũ."],a:2},
+{t:"mc",q:"Đâu là lập luận đầy đủ nhất để chứng minh sự phát triển và thay thế các hình thái kinh tế - xã hội là một quá trình lịch sử – tự nhiên?",o:["Con người mong muốn xã hội thay đổi nên xã hội thay đổi.","Khoa học – công nghệ phát triển nên mọi hình thái kinh tế - xã hội đều tự động biến mất.","Sự phát triển của lực lượng sản xuất tạo ra yêu cầu thay đổi quan hệ sản xuất; sự biến đổi của cơ sở kinh tế kéo theo những biến đổi của kiến trúc thượng tầng, qua đó thúc đẩy sự chuyển biến của hình thái kinh tế - xã hội theo các quy luật khách quan.","Các hình thái kinh tế - xã hội lần lượt thay thế nhau theo một trình tự cố định ở mọi quốc gia."],a:2}
+];
+
+/* ---- Bàn cờ ---- */
+const N=[],ix={};
+function add(id,x,y,type){ix[id]=N.length;N.push({id,x,y,type,adj:[],own:-1})}
+function L(a,b){N[ix[a]].adj.push(ix[b]);N[ix[b]].adj.push(ix[a])}
+const RR=[268,195,125],cor=(k,i)=>{const a=(-90+72*(i%5))*Math.PI/180;return[300+RR[k]*Math.cos(a),300+RR[k]*Math.sin(a)]};
+/* 3 vòng x 15 ô + ô tâm = 46 ô: 5 xuất phát, 26 cam, 15 trắng */
+for(let k=0;k<3;k++)for(let m=0;m<15;m++){const i=Math.floor(m/3),r=m%3,c=cor(k,i),d=cor(k,i+1),x=c[0]+(d[0]-c[0])*r/3,y=c[1]+(d[1]-c[1])*r/3;
+  const t=k===0?(r===0?"s":r===1?"q":"e"):k===1?(r===0?"e":"q"):(r===1?"e":"q");add(k+"_"+m,x,y,t)}
+add("O",300,300,"q");
+for(let k=0;k<3;k++)for(let m=0;m<15;m++){L(k+"_"+m,k+"_"+((m+1)%15));if(k<2)L(k+"_"+m,(k+1)+"_"+m);else if(m%3===0)L("2_"+m,"O")}
+for(let i=0;i<5;i++)N[ix["0_"+3*i]].own=i;
+
+
+/* ---- Nhạc nền: file nhac-nen.mp3 cùng thư mục (nếu thiếu file thì dùng nhạc tự tạo) + hiệu ứng ---- */
+const CH=[[57,60,64,69],[53,57,60,65],[48,52,55,60],[55,59,62,67]],PT=[0,1,2,3,2,1,2,3];
+const Mu={c:null,on:true,vol:.5,nx:0,st:0,au:null,
+ init(){if(!this.made){this.made=1;const a=new Audio("nhac-nen.mp3");a.loop=true;a.addEventListener("error",()=>{if(this.au===a){this.au=null;this.apply()}});this.au=a}if(this.c)return;const C=window.AudioContext||window.webkitAudioContext;if(!C){this.apply();return}this.c=new C();this.mg=this.c.createGain();this.mg.connect(this.c.destination);this.sg=this.c.createGain();this.sg.connect(this.c.destination);this.nx=this.c.currentTime+.1;setInterval(()=>this.sched(),100);this.apply()},
+ apply(){$("mb").textContent="Nhạc: "+(this.on?"bật":"tắt");if(this.c){this.mg.gain.value=this.on?this.vol*.6:0;this.sg.gain.value=this.on?this.vol:0}
+  if(this.au){this.au.volume=this.vol;if(this.on)this.au.play().catch(()=>{});else this.au.pause()}},
+ tone(t,m,d,ty,g,out){const o=this.c.createOscillator(),e=this.c.createGain();o.type=ty;o.frequency.value=440*2**((m-69)/12);e.gain.setValueAtTime(.0001,t);e.gain.linearRampToValueAtTime(g,t+.02);e.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(e);e.connect(out||this.mg);o.start(t);o.stop(t+d+.05)},
+ sched(){if(!this.c||this.au)return;while(this.nx<this.c.currentTime+.4){const s=this.st,ch=CH[Math.floor(s/8)%4],n=s%8;
+   this.tone(this.nx,ch[PT[n]]+12,.4,"triangle",.14);if(n===0)this.tone(this.nx,ch[0]-12,2.2,"sine",.25);if(n===4)this.tone(this.nx,ch[0]-5,1.2,"sine",.12);
+   this.nx+=.3125;this.st++}},
+ sfx(a){if(!this.c)return;const t=this.c.currentTime;a.forEach((m,i)=>this.tone(t+i*.09,m,.25,"square",.1,this.sg))},
+ toggle(){this.on=!this.on;this.apply()},
+ setVol(v){this.vol=v;this.apply()},
+ file(f){if(!f)return;this.init();if(this.au)this.au.pause();this.au=new Audio(URL.createObjectURL(f));this.au.loop=true;this.apply()}};
+
+/* ---- Trạng thái ---- */
+const G={run:false,turn:0,left:1500,tl:30,mode:"wait",sc:[10,10,10,10,10],ok:[0,0,0,0,0],retry:[null,null,null,null,null],pos:[0,1,2,3,4].map(i=>ix["0_"+3*i]),deck:[],modal:false,to:null,log:[]};
+G.deck=[...Q.keys()];for(let i=G.deck.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[G.deck[i],G.deck[j]]=[G.deck[j],G.deck[i]]}
+const $=id=>document.getElementById(id),m=$("m");
+const log=s=>{G.log.unshift(s);if(G.log.length>6)G.log.pop()};
+const addSc=(t,d)=>{G.sc[t]+=d};
+const fmt=s=>String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
+
+function modal(h,bs,to){G.modal=true;G.to=to||null;window.B=bs.map(b=>b[1]);
+  m.innerHTML=`<div class="box">${h}<div class="btns">${bs.map((b,i)=>`<button onclick="B[${i}]()">${b[0]}</button>`).join("")}</div></div>`;m.hidden=false}
+function hide(){m.hidden=true;G.modal=false;G.to=null}
+
+function render(){
+  let s="";
+  N.forEach((n,i)=>n.adj.forEach(j=>{if(j>i)s+=`<line x1="${n.x}" y1="${n.y}" x2="${N[j].x}" y2="${N[j].y}" stroke="#9AA9BF" stroke-width="4"/>`}));
+  const reach=G.mode==="move"?N[G.pos[G.turn]].adj:[];
+  N.forEach((n,i)=>{
+    const fill=n.own>=0?TC[n.own]:n.type==="q"?"#F28C28":"#fff",go=reach.includes(i);
+    s+=`<g ${go?`class="go" data-i="${i}" tabindex="0" role="button" aria-label="Đi tới ô ${n.id}"`:""}>`;
+    if(go)s+=`<circle class="ring" cx="${n.x}" cy="${n.y}" r="26" fill="none" stroke="${TC[G.turn]}" stroke-width="3" stroke-dasharray="5 4"/>`;
+    s+=`<circle cx="${n.x}" cy="${n.y}" r="20" fill="${fill}" stroke="#1B2A4A" stroke-width="3"/>`;
+    const lab=n.type==="s"?(n.own+1):n.own<0?(n.type==="q"?"?":"✦"):"";
+    if(lab!=="")s+=`<text x="${n.x}" y="${n.y+5}" text-anchor="middle" font-size="16" font-weight="800" fill="${n.own>=0?"#fff":"#1B2A4A"}" opacity="${n.type==="s"?".55":"1"}">${lab}</text>`;
+    s+=`</g>`});
+  const at={};G.pos.forEach((p,t)=>(at[p]=at[p]||[]).push(t));
+  for(const p in at)at[p].forEach((t,k)=>{const a=(k/at[p].length)*6.283-1.57,x=N[p].x+(at[p].length>1?12*Math.cos(a):0),y=N[p].y+(at[p].length>1?12*Math.sin(a):0);
+    s+=`<g pointer-events="none"><circle cx="${x}" cy="${y}" r="9" fill="${TC[t]}" stroke="#fff" stroke-width="3"/><circle cx="${x}" cy="${y}" r="9" fill="none" stroke="#1B2A4A" stroke-width="1.5"/><text x="${x}" y="${y+4}" text-anchor="middle" font-size="11" font-weight="800" fill="#fff">${t+1}</text></g>`});
+  $("bd").innerHTML=s;
+  $("clk").textContent=fmt(Math.max(G.left,0));
+  $("turn").innerHTML=`<b style="color:${TC[G.turn]}">Lượt của ${TN[G.turn]}</b> · còn ${Math.max(G.tl,0)} giây`;
+  $("tb").style.width=Math.max(G.tl,0)/30*100+"%";$("tb").style.background=TC[G.turn];
+  const p=G.pos[G.turn],ch=G.mode==="move"&&G.retry[G.turn]===p&&N[p].own<0&&N[p].type==="q";
+  $("act").innerHTML=G.mode==="move"?(ch?`<button onclick="ask(${p})">Khiêu chiến lại ô này</button><p class="mut" style="margin:6px 0 0">hoặc bấm một ô sáng để di chuyển.</p>`:`<p class="mut" style="margin:0">Bấm một ô đang nhấp nháy để đi 1 bước.</p>`):"";
+  $("sb").innerHTML=G.sc.map((v,t)=>`<div class="sc ${t===G.turn?"on":""}"><span class="dot" style="background:${TC[t]}"></span><span class="n">${TN[t]} <small>${N.filter(n=>n.own===t).length} ô</small></span><span class="v">${v}</span></div>`).join("");
+  $("lg").innerHTML=G.log.map(x=>`<li>${x}</li>`).join("");
+}
+$("bd").addEventListener("click",e=>{const g=e.target.closest("[data-i]");if(g&&G.run&&G.mode==="move")move(+g.dataset.i)});
+$("bd").addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){const g=e.target.closest("[data-i]");if(g&&G.run&&G.mode==="move"){e.preventDefault();move(+g.dataset.i)}}});
+
+/* ---- Luồng lượt chơi ---- */
+function move(i){const T=G.turn;Mu.sfx([67]);G.mode="wait";if(G.retry[T]!==null&&G.retry[T]!==i)G.retry[T]=null;G.pos[T]=i;const n=N[i];
+  if(n.own>=0&&n.own!==T){addSc(T,-3);log(`${TN[T]} nộp phí −3 (ô của ${TN[n.own]})`);render();
+    modal(`<h3>Nộp phí −3</h3><p>Ô này đã thuộc về ${TN[n.own]}.</p>`,[["Tiếp tục",()=>{hide();endTurn()}]])}
+  else if(n.own===T){log(`${TN[T]} đi vào ô của mình`);endTurn()}
+  else if(n.type==="q")ask(i);else event(i);render()}
+
+function endTurn(){G.mode="wait";if(!N.some(n=>n.type==="e"&&n.own<0)){finish();return}
+  G.turn=(G.turn+1)%5;G.tl=30;G.mode="move";render()}
+
+function ask(i){const T=G.turn;G.mode="wait";if(!G.deck.length){finish();return}
+  const q=Q[G.deck.pop()],kind={f:"Đục lỗ",tf:"Đúng / Sai",mc:"Trắc nghiệm"}[q.t],L4="ABCD";
+  const ans=q.t==="tf"?(q.a?"Đúng":"Sai"):q.t==="mc"?`${L4[q.a]}. ${q.o[q.a]}`:q.a;
+  const head=`<p class="tag">${TN[T]} · ${kind}</p><p class="q">${q.q}</p>`;
+  const res=ok=>{Mu.sfx(ok?[72,76,79,84]:[60,55,50]);
+    if(ok){addSc(T,10);N[i].own=T;G.retry[T]=null;G.ok[T]++;log(`${TN[T]} trả lời đúng +10`)}
+    else{addSc(T,-5);G.retry[T]=i;log(`${TN[T]} trả lời sai −5`)}
+    render();modal(`<h3>${ok?"Chính xác! +10":"Chưa đúng −5"}</h3><p>Đáp án: <b>${ans}</b></p>${q.e?`<p class="mut">${q.e}</p>`:""}${ok?"":`<p class="mut">${TN[T]} có thể khiêu chiến lại ô này ở lượt sau.</p>`}`,[["Tiếp tục",()=>{hide();endTurn()}]])};
+  if(q.t==="tf")modal(head,[["Đúng",()=>res(q.a===true)],["Sai",()=>res(q.a===false)]],()=>res(false));
+  else if(q.t==="mc")modal(head,q.o.map((o,k)=>[`${L4[k]}. ${o}`,()=>res(k===q.a)]),()=>res(false));
+  else modal(head,[["Hiện đáp án",()=>modal(head+`<p>Đáp án: <b>${ans}</b></p>`,[["Đội trả lời đúng",()=>res(true)],["Đội trả lời sai",()=>res(false)]],()=>res(false))]],()=>res(false));
+  render()}
+
+function event(i){const T=G.turn;N[i].own=T;Mu.sfx([79,84]);const r=1+Math.floor(Math.random()*4);
+  const ok=(h,p,f)=>modal(`<h3>${h}</h3><p>${p}</p>`,[["Tiếp tục",()=>{hide();f()}]]);
+  if(r===1){addSc(T,4);log(`${TN[T]} gặp Kho báu +4`);ok("Kho báu +4","Đội nhận 4 điểm.",endTurn)}
+  else if(r===2){addSc(T,-3);log(`${TN[T]} bị Ăn thuế −3`);ok("Ăn thuế −3","Đội nộp 3 điểm.",endTurn)}
+  else if(r===3){log(`${TN[T]} được Thêm lượt`);ok("Thêm lượt","Đội được đi thêm 1 bước ngay.",()=>{G.mode="move";render()})}
+  else{const P=(T+4)%5,cut=Math.max(0,Math.floor(G.sc[P]/2)),a=()=>{addSc(P,-cut);log(`${TN[T]} trừ ${cut} điểm của ${TN[P]}`);hide();endTurn()},b=()=>{addSc(T,4);log(`${TN[T]} chọn +4`);hide();endTurn()};
+    modal(`<h3>Ô lựa chọn</h3><p>Chọn một trong hai:</p>`,[[`Trừ ${cut} điểm (một nửa) của ${TN[P]}`,a],["Cộng 4 điểm cho đội mình",b]],b)}
+  render()}
+
+function finish(){Mu.sfx([72,76,79,84,88]);G.run=false;G.mode="wait";render();
+  const r=[0,1,2,3,4].sort((a,b)=>G.sc[b]-G.sc[a]||N.filter(n=>n.own===b).length-N.filter(n=>n.own===a).length||G.ok[b]-G.ok[a]);
+  modal(`<h3>Kết thúc ván đấu</h3><p><b style="color:${TC[r[0]]}">${TN[r[0]]}</b> chiến thắng!</p>${r.map((t,k)=>`<div class="sc"><span class="dot" style="background:${TC[t]}"></span><span class="n">${k+1}. ${TN[t]} <small>${N.filter(n=>n.own===t).length} ô · ${G.ok[t]} câu đúng</small></span><span class="v">${G.sc[t]}</span></div>`).join("")}`,[["Chơi lại",()=>location.reload()]])}
+
+setInterval(()=>{if(!G.run)return;G.left--;G.tl--;
+  if(G.left<=0){G.left=0;finish();return}
+  if(G.tl<=0){if(G.modal&&G.to){const f=G.to;G.to=null;f()}else if(!G.modal&&G.mode==="move"){log(`${TN[G.turn]} hết giờ, mất lượt`);endTurn()}}
+  render()},1000);
+
+/* ---- Màn hình bắt đầu ---- */
+render();
+modal(`<h3>Ngũ Giác Tranh Hùng</h3><ol class="rules"><li>5 đội, mỗi đội xuất phát từ một góc ngoài cùng với 10 điểm, đi lần lượt từ Đội 1 đến Đội 5.</li><li>Mỗi lượt 30 giây, đi 1 bước tới ô liền kề.</li><li><b style="color:#C46A10">Ô cam</b>: trả lời đúng +10, sai −5 (lượt sau được khiêu chiến lại).</li><li><b>Ô trắng</b>: sự kiện ngẫu nhiên — Kho báu +4, Ăn thuế −3, Thêm lượt, hoặc Ô lựa chọn (trừ nửa điểm đội trước hay +4).</li><li>Ô bạn chiếm được tô màu đội. Đi vào ô màu đội khác: nộp phí −3.</li><li>Kết thúc sau 25 phút hoặc khi hết ô trắng. Điểm cao nhất thắng.</li></ol>`,[["Bắt đầu chơi",()=>{Mu.init();hide();G.run=true;G.mode="move";render()}]]);
+</script>
+</body>
+</html>
